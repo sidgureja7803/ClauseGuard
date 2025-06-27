@@ -10,6 +10,7 @@ import authRoutes from './routes/auth'
 import uploadRoutes from './routes/upload'
 import analysisRoutes from './routes/analysis'
 import userRoutes from './routes/user'
+import langchainRoutes from './routes/langchain'
 
 // Middleware imports
 import { errorHandler } from './middleware/errorHandler'
@@ -50,9 +51,6 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 
-// Clerk authentication middleware
-app.use(clerkMiddleware)
-
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ 
@@ -62,7 +60,13 @@ app.get('/health', (req, res) => {
   })
 })
 
-// API routes
+// LangChain routes (before auth middleware for testing)
+app.use('/api/langchain', langchainRoutes)
+
+// Clerk authentication middleware
+app.use(clerkMiddleware)
+
+// Protected API routes
 app.use('/api/auth', authRoutes)
 app.use('/api/upload', uploadRoutes)
 app.use('/api/analysis', analysisRoutes)
@@ -95,11 +99,17 @@ const connectDB = async () => {
 // Start server
 const startServer = async () => {
   try {
-    await connectDB()
+    // Temporarily skip MongoDB for LangChain testing
+    if (process.env.SKIP_MONGODB !== 'true') {
+      await connectDB()
+    } else {
+      logger.info('Skipping MongoDB connection for testing')
+    }
     
     app.listen(PORT, () => {
       logger.info(`ClauseGuard API server running on port ${PORT}`)
       logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`)
+      logger.info(`LangChain integration: Ready for testing!`)
     })
   } catch (error) {
     logger.error('Failed to start server:', error)
@@ -110,7 +120,7 @@ const startServer = async () => {
 // Graceful shutdown
 process.on('SIGTERM', () => {
   logger.info('SIGTERM received, shutting down gracefully')
-  mongoose.connection.close(() => {
+  mongoose.connection.close().then(() => {
     logger.info('MongoDB connection closed')
     process.exit(0)
   })
@@ -118,7 +128,7 @@ process.on('SIGTERM', () => {
 
 process.on('SIGINT', () => {
   logger.info('SIGINT received, shutting down gracefully')
-  mongoose.connection.close(() => {
+  mongoose.connection.close().then(() => {
     logger.info('MongoDB connection closed')
     process.exit(0)
   })

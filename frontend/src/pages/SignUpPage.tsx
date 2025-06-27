@@ -23,36 +23,25 @@ const SignUpPage = () => {
         </div>
       </nav>
 
-      {/* Main Content */}
+      {/* Main Content - Only Clerk's SignUp */}
       <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">
-              Get started today
-            </h2>
-            <p className="text-gray-600">
-              Create your ClauseGuard account and start analyzing contracts
-            </p>
-          </div>
+        <div className="max-w-md w-full">
+          <SignUp 
+            appearance={{
+              elements: {
+                formButtonPrimary: 'bg-primary-600 hover:bg-primary-700 text-sm normal-case',
+                socialButtonsBlockButton: 'border border-gray-300 hover:bg-gray-50 text-gray-700',
+                card: 'bg-white rounded-2xl shadow-xl border border-gray-200',
+                rootBox: 'w-full',
+                headerTitle: 'text-3xl font-bold text-gray-900 mb-2',
+                headerSubtitle: 'text-gray-600 mb-6'
+              }
+            }}
+            redirectUrl="/dashboard"
+            signInUrl="/sign-in"
+          />
           
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
-            <SignUp 
-              appearance={{
-                elements: {
-                  formButtonPrimary: 'bg-primary-600 hover:bg-primary-700 text-sm normal-case',
-                  socialButtonsBlockButton: 'border border-gray-300 hover:bg-gray-50 text-gray-700',
-                  card: 'shadow-none',
-                  rootBox: 'w-full',
-                  headerTitle: 'hidden',
-                  headerSubtitle: 'hidden'
-                }
-              }}
-              redirectUrl="/dashboard"
-              signInUrl="/sign-in"
-            />
-          </div>
-          
-          <div className="text-center">
+          <div className="text-center mt-6">
             <Link 
               to="/" 
               className="text-sm text-gray-500 hover:text-gray-700 transition-colors"

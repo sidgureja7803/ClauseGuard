@@ -19,6 +19,7 @@
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 6rem; /* Account for sticky header */
 }
 
 body {
@@ -295,6 +296,31 @@ body {
 .scroll-reveal.revealed {
   opacity: 1;
   transform: translateY(0);
+}
+
+/* Ensure key sections are always visible */
+#features-header,
+#testimonials-header, 
+#pricing-header,
+.scroll-reveal:first-of-type {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+/* Force visibility for main content sections */
+section[id="features"],
+section[id="testimonials"], 
+section[id="pricing"] {
+  opacity: 1;
+  visibility: visible;
+}
+
+section[id="features"] .scroll-reveal,
+section[id="testimonials"] .scroll-reveal,
+section[id="pricing"] .scroll-reveal {
+  opacity: 1;
+  transform: translateY(0);
+  animation: fadeInUp 0.8s ease-out;
 }
 
 /* Premium Card Effects */

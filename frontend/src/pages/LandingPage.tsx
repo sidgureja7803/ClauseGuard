@@ -107,21 +107,48 @@ const LandingPage = () => {
   const handleIntersection = (entries: IntersectionObserverEntry[]) => {
     entries.forEach((entry) => {
       if (entry.isIntersecting) {
+        entry.target.classList.add('revealed')
         setIsVisible(prev => ({ ...prev, [entry.target.id]: true }))
       }
     })
   }
 
   useEffect(() => {
+    // Immediately show key sections
+    const keyElements = document.querySelectorAll('#features-header, #testimonials-header, #pricing-header')
+    keyElements.forEach(el => el.classList.add('revealed'))
+
     const observer = new IntersectionObserver(handleIntersection, {
-      threshold: 0.1
+      threshold: 0.1,
+      rootMargin: '50px'
     })
 
     const elements = document.querySelectorAll('.scroll-reveal')
     elements.forEach(el => observer.observe(el))
 
-    return () => observer.disconnect()
+    // Fallback: reveal all elements after 2 seconds if intersection observer fails
+    const fallbackTimer = setTimeout(() => {
+      const hiddenElements = document.querySelectorAll('.scroll-reveal:not(.revealed)')
+      hiddenElements.forEach(el => el.classList.add('revealed'))
+    }, 2000)
+
+    return () => {
+      observer.disconnect()
+      clearTimeout(fallbackTimer)
+    }
   }, [])
+
+  // Add smooth scroll handler
+  const handleSmoothScroll = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
+    e.preventDefault()
+    const element = document.getElementById(targetId)
+    if (element) {
+      element.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      })
+    }
+  }
 
   return (
     <div className="min-h-screen bg-white relative overflow-hidden">
@@ -149,9 +176,27 @@ const LandingPage = () => {
             </div>
             
             <div className="hidden md:flex items-center space-x-8">
-              <a href="#features" className="btn-ghost">Features</a>
-              <a href="#testimonials" className="btn-ghost">Testimonials</a>
-              <a href="#pricing" className="btn-ghost">Pricing</a>
+              <a 
+                href="#features" 
+                onClick={(e) => handleSmoothScroll(e, 'features')}
+                className="btn-ghost"
+              >
+                Features
+              </a>
+              <a 
+                href="#testimonials" 
+                onClick={(e) => handleSmoothScroll(e, 'testimonials')}
+                className="btn-ghost"
+              >
+                Testimonials
+              </a>
+              <a 
+                href="#pricing" 
+                onClick={(e) => handleSmoothScroll(e, 'pricing')}
+                className="btn-ghost"
+              >
+                Pricing
+              </a>
             </div>
 
             <div className="flex items-center space-x-4">
