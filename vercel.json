@@ -1,0 +1,33 @@
+{
+  "version": 2,
+  "name": "clauseguard-frontend",
+  "builds": [
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+  "env": {
+    "VITE_CLERK_PUBLISHABLE_KEY": "@clerk_publishable_key",
+    "VITE_API_URL": "@api_url"
+  },
+  "build": {
+    "env": {
+      "VITE_CLERK_PUBLISHABLE_KEY": "@clerk_publishable_key",
+      "VITE_API_URL": "@api_url"
+    }
+  }
+} 
