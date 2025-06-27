@@ -11,6 +11,7 @@ import uploadRoutes from './routes/upload'
 import analysisRoutes from './routes/analysis'
 import userRoutes from './routes/user'
 import langchainRoutes from './routes/langchain'
+import complianceRoutes from './routes/compliance'
 
 // Middleware imports
 import { errorHandler } from './middleware/errorHandler'
@@ -62,6 +63,9 @@ app.get('/health', (req, res) => {
 
 // LangChain routes (before auth middleware for testing)
 app.use('/api/langchain', langchainRoutes)
+
+// Public compliance routes
+app.use('/api/compliance', complianceRoutes)
 
 // Clerk authentication middleware
 app.use(clerkMiddleware)

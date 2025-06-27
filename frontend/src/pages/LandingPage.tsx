@@ -3,12 +3,15 @@ import { Link } from 'react-router-dom'
 import { 
   Search, AlertTriangle, Edit3, Upload, ArrowRight, Shield, Zap, Users, 
   CheckCircle, Star, Play, Download, FileText, Clock, TrendingUp,
-  Award, Sparkles, MousePointer, Eye, BarChart3, Layers
+  Award, Sparkles, MousePointer, Eye, BarChart3, Layers, HelpCircle
 } from 'lucide-react'
 import { FeatureCard } from '@/types'
 import AnimatedCounter from '@/components/ui/AnimatedCounter'
 import GradientText from '@/components/ui/GradientText'
 import FloatingCTA from '@/components/ui/FloatingCTA'
+import IBMBadge from '@/components/ui/IBMBadge'
+import HowItWorksModal from '@/components/ui/HowItWorksModal'
+import SampleContractDemo from '@/components/ui/SampleContractDemo'
 
 const features: FeatureCard[] = [
   {
@@ -94,6 +97,7 @@ const pricingFeatures = [
 const LandingPage = () => {
   const [isVisible, setIsVisible] = useState({})
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
+  const [showHowItWorks, setShowHowItWorks] = useState(false)
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -197,6 +201,13 @@ const LandingPage = () => {
               >
                 Pricing
               </a>
+              <button 
+                onClick={() => setShowHowItWorks(true)}
+                className="btn-ghost flex items-center"
+              >
+                <HelpCircle className="h-4 w-4 mr-1" />
+                How it Works
+              </button>
             </div>
 
             <div className="flex items-center space-x-4">
@@ -227,11 +238,14 @@ const LandingPage = () => {
           </div>
 
           <div className="text-center mb-20 relative z-10">
-            <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary-50 border border-primary-200 mb-8 animate-fade-in">
-              <Sparkles className="h-4 w-4 text-primary-600 mr-2" />
-              <span className="text-sm font-medium text-primary-700">
-                Powered by IBM Granite AI • Trusted by 2,500+ Legal Teams
-              </span>
+            <div className="flex flex-col items-center gap-4 mb-8 animate-fade-in">
+              <IBMBadge variant="large" />
+              <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary-50 border border-primary-200">
+                <Sparkles className="h-4 w-4 text-primary-600 mr-2" />
+                <span className="text-sm font-medium text-primary-700">
+                  Trusted by 2,500+ Legal Teams
+                </span>
+              </div>
             </div>
 
                          <h1 className="text-6xl md:text-8xl font-black text-gray-900 mb-8 leading-tight animate-fade-in animate-delay-100">
@@ -258,9 +272,12 @@ const LandingPage = () => {
                 </div>
               </Link>
 
-              <button className="group flex items-center px-8 py-4 bg-white/80 backdrop-blur-sm border-2 border-gray-200 hover:border-primary-300 text-gray-700 font-semibold rounded-2xl text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+              <button 
+                onClick={() => setShowHowItWorks(true)}
+                className="group flex items-center px-8 py-4 bg-white/80 backdrop-blur-sm border-2 border-gray-200 hover:border-primary-300 text-gray-700 font-semibold rounded-2xl text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+              >
                 <Play className="h-6 w-6 mr-3 text-primary-600 group-hover:scale-110 transition-transform duration-300" />
-                <span>Watch Demo</span>
+                <span>How it Works</span>
               </button>
             </div>
 
@@ -529,6 +546,25 @@ const LandingPage = () => {
         </div>
       </section>
 
+      {/* Sample Demo Section */}
+      <section className="py-32 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
+              See
+              <GradientText gradient="primary" animated> ClauseGuard in Action</GradientText>
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Try our AI analysis with a sample contract right now. No signup required!
+            </p>
+          </div>
+          
+          <div className="max-w-4xl mx-auto">
+            <SampleContractDemo />
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-32 bg-gradient-to-r from-gray-900 via-primary-900 to-blue-900 relative overflow-hidden">
         <div className="absolute inset-0 bg-black/20" />
@@ -614,6 +650,12 @@ const LandingPage = () => {
 
       {/* Floating CTA */}
       <FloatingCTA />
+
+      {/* How It Works Modal */}
+      <HowItWorksModal 
+        isOpen={showHowItWorks} 
+        onClose={() => setShowHowItWorks(false)} 
+      />
     </div>
   )
 }

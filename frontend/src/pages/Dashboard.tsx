@@ -6,20 +6,40 @@ import {
   AlertTriangle, 
   CheckCircle, 
   TrendingUp,
-  Plus
+  Plus,
+  MessageSquare,
+  BarChart3,
+  BookOpen,
+  Sparkles
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { DashboardStats, ContractAnalysis } from '@/types'
 import { formatDate } from '@/lib/utils'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import IBMBadge from '@/components/ui/IBMBadge'
+import AnalyticsDashboard from '@/components/ui/AnalyticsDashboard'
+import ContractChatAgent from '@/components/ui/ContractChatAgent'
+import OnboardingTooltips from '@/components/ui/OnboardingTooltips'
 
 const Dashboard = () => {
   const { user } = useUser()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [recentUploads, setRecentUploads] = useState<ContractAnalysis[]>([])
   const [loading, setLoading] = useState(true)
+  const [showChatAgent, setShowChatAgent] = useState(false)
+  const [showAnalytics, setShowAnalytics] = useState(false)
+  const [showOnboarding, setShowOnboarding] = useState(false)
+  const [isFirstVisit, setIsFirstVisit] = useState(false)
 
   useEffect(() => {
+    // Check if this is the user's first visit
+    const hasVisited = localStorage.getItem(`dashboard_visited_${user?.id}`)
+    if (!hasVisited && user?.id) {
+      setIsFirstVisit(true)
+      setShowOnboarding(true)
+      localStorage.setItem(`dashboard_visited_${user?.id}`, 'true')
+    }
+
     // Mock data for now - replace with actual API calls
     setTimeout(() => {
       setStats({
@@ -80,23 +100,58 @@ const Dashboard = () => {
   return (
     <div className="space-y-8">
       {/* Welcome Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl shadow-xl text-white p-8" data-tour="nav">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              Welcome back, {user?.firstName || 'User'}! 👋
-            </h1>
-            <p className="text-gray-600">
-              Ready to analyze some contracts? Upload a new document to get started.
+          <div className="flex-1">
+            <div className="flex items-center space-x-3 mb-4">
+              <h1 className="text-3xl font-bold">
+                Welcome back, {user?.firstName || 'User'}! 👋
+              </h1>
+              <IBMBadge variant="default" className="bg-white/20 text-white border-white/30" />
+            </div>
+            <p className="text-blue-100 text-lg mb-6">
+              Ready to analyze some contracts? Upload a new document or try our AI assistant.
             </p>
+            
+            {/* Quick Actions */}
+            <div className="flex flex-wrap gap-4">
+              <Link
+                to="/upload"
+                data-tour="upload-button"
+                className="bg-white text-blue-600 hover:bg-blue-50 font-semibold py-3 px-6 rounded-xl transition-all duration-200 flex items-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-105"
+              >
+                <Plus className="h-5 w-5" />
+                <span>Upload Contract</span>
+              </Link>
+              
+              <button
+                onClick={() => setShowChatAgent(true)}
+                className="bg-white/20 text-white hover:bg-white/30 font-semibold py-3 px-6 rounded-xl transition-all duration-200 flex items-center space-x-2 backdrop-blur-sm"
+              >
+                <MessageSquare className="h-5 w-5" />
+                <span>Ask AI Assistant</span>
+              </button>
+              
+              <button
+                onClick={() => setShowAnalytics(true)}
+                className="bg-white/20 text-white hover:bg-white/30 font-semibold py-3 px-6 rounded-xl transition-all duration-200 flex items-center space-x-2 backdrop-blur-sm"
+              >
+                <BarChart3 className="h-5 w-5" />
+                <span>View Analytics</span>
+              </button>
+            </div>
           </div>
-          <Link
-            to="/upload"
-            className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200 flex items-center space-x-2 shadow-lg hover:shadow-xl"
-          >
-            <Plus className="h-5 w-5" />
-            <span>Upload New Contract</span>
-          </Link>
+          
+          {/* AI Status Indicator */}
+          <div className="hidden lg:flex flex-col items-center space-y-3">
+            <div className="relative">
+              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                <Sparkles className="h-8 w-8 text-white animate-pulse" />
+              </div>
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-pulse"></div>
+            </div>
+            <span className="text-sm text-blue-100 font-medium">AI Online</span>
+          </div>
         </div>
       </div>
 
@@ -251,6 +306,47 @@ const Dashboard = () => {
           </div>
         )}
       </div>
+
+      {/* Analytics Dashboard Modal */}
+      {showAnalytics && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+            <div className="p-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-900">Analytics Dashboard</h2>
+                <button
+                  onClick={() => setShowAnalytics(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+            <div className="p-4 overflow-y-auto">
+              <AnalyticsDashboard />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Contract Chat Agent Modal */}
+      {showChatAgent && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="max-w-2xl w-full">
+            <ContractChatAgent
+              contractTitle="Recent Contract Analysis"
+              onClose={() => setShowChatAgent(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Onboarding Tooltips */}
+      <OnboardingTooltips
+        isActive={showOnboarding}
+        onComplete={() => setShowOnboarding(false)}
+        onSkip={() => setShowOnboarding(false)}
+      />
     </div>
   )
 }
