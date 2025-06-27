@@ -6,10 +6,10 @@ import App from './App.tsx'
 import './index.css'
 import { Toaster } from 'react-hot-toast'
 
-const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
+const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string
 
 if (!PUBLISHABLE_KEY) {
-  throw new Error('Missing Publishable Key')
+  throw new Error("Missing Clerk Publishable Key")
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -27,10 +27,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             },
             success: {
               duration: 3000,
-              theme: {
-                primary: '#4ade80',
-                secondary: '#000',
-              },
             },
           }}
         />
