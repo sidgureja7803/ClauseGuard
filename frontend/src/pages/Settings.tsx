@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useUser } from '@clerk/clerk-react'
 import { 
   User, 
@@ -61,7 +61,7 @@ const Settings = () => {
           <div className="flex items-center space-x-6">
             <img
               src={user?.imageUrl}
-              alt={user?.firstName}
+              alt={user?.firstName || 'User Avatar'}
               className="h-16 w-16 rounded-full object-cover"
             />
             <div>

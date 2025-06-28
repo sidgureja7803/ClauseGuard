@@ -12,6 +12,7 @@ import analysisRoutes from './routes/analysis'
 import userRoutes from './routes/user'
 import langchainRoutes from './routes/langchain'
 import complianceRoutes from './routes/compliance'
+import contractAgentRoutes from './routes/contractAgent'
 
 // Middleware imports
 import { errorHandler } from './middleware/errorHandler'
@@ -63,6 +64,9 @@ app.get('/health', (req, res) => {
 
 // LangChain routes (before auth middleware for testing)
 app.use('/api/langchain', langchainRoutes)
+
+// Contract Agent routes (before auth middleware for testing)
+app.use('/api/agent', contractAgentRoutes)
 
 // Public compliance routes
 app.use('/api/compliance', complianceRoutes)
