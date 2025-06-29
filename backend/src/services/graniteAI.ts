@@ -61,7 +61,7 @@ ${text}
 Summary:`
 
     const response = await this.makeRequest({
-      model_id: 'ibm/granite-3b-code-instruct',
+      model_id: 'ibm/granite-3-3-8b-instruct',
       input: prompt,
       parameters: {
         max_new_tokens: 500,
@@ -94,7 +94,7 @@ Please provide your analysis in the following JSON format:
 Analysis:`
 
     const response = await this.makeRequest({
-      model_id: 'ibm/granite-3b-code-instruct',
+      model_id: 'ibm/granite-3-3-8b-instruct',
       input: prompt,
       parameters: {
         max_new_tokens: 800,
@@ -179,7 +179,7 @@ Please provide a rewritten version that mitigates these risks:
 Safer alternative:`
 
     const response = await this.makeRequest({
-      model_id: 'ibm/granite-3b-code-instruct',
+      model_id: 'ibm/granite-3-3-8b-instruct',
       input: prompt,
       parameters: {
         max_new_tokens: 600,

@@ -10,93 +10,64 @@ import {
 import { ContractAnalysis } from '@/types'
 import { formatDate, getRiskColor, getRiskIcon } from '@/lib/utils'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { analysisAPI } from '@/lib/api'
+import toast from 'react-hot-toast'
 
 const History = () => {
   const [analyses, setAnalyses] = useState<ContractAnalysis[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'processing' | 'failed'>('all')
   const [riskFilter, setRiskFilter] = useState<'all' | 'safe' | 'review' | 'risky'>('all')
 
+  // Debounce search term to prevent too many API calls
   useEffect(() => {
-    // Mock data for now - replace with actual API call
-    setTimeout(() => {
-      setAnalyses([
-        {
-          id: '1',
-          userId: 'user1',
-          fileName: 'Service Agreement Q4 2024.pdf',
-          fileUrl: '',
-          uploadDate: new Date().toISOString(),
-          fileType: 'pdf',
-          status: 'completed',
-          analysis: {
-            summary: 'Contract contains standard service terms with 2 high-risk clauses requiring attention.',
-            clauses: [],
-            overallRisk: 'review',
-            confidence: 0.87
-          }
-        },
-        {
-          id: '2',
-          userId: 'user1',
-          fileName: 'Employment Contract - John Smith.docx',
-          fileUrl: '',
-          uploadDate: new Date(Date.now() - 86400000).toISOString(),
-          fileType: 'docx',
-          status: 'completed',
-          analysis: {
-            summary: 'Standard employment contract with competitive terms and fair conditions.',
-            clauses: [],
-            overallRisk: 'safe',
-            confidence: 0.92
-          }
-        },
-        {
-          id: '3',
-          userId: 'user1',
-          fileName: 'Vendor Agreement - TechCorp.pdf',
-          fileUrl: '',
-          uploadDate: new Date(Date.now() - 172800000).toISOString(),
-          fileType: 'pdf',
-          status: 'completed',
-          analysis: {
-            summary: 'Multiple high-risk clauses identified including unfavorable termination and liability terms.',
-            clauses: [],
-            overallRisk: 'risky',
-            confidence: 0.94
-          }
-        },
-        {
-          id: '4',
-          userId: 'user1',
-          fileName: 'NDA Template.txt',
-          fileUrl: '',
-          uploadDate: new Date(Date.now() - 259200000).toISOString(),
-          fileType: 'txt',
-          status: 'processing',
-        },
-        {
-          id: '5',
-          userId: 'user1',
-          fileName: 'Partnership Agreement.pdf',
-          fileUrl: '',
-          uploadDate: new Date(Date.now() - 432000000).toISOString(),
-          fileType: 'pdf',
-          status: 'failed',
-        }
-      ])
-      setLoading(false)
-    }, 1000)
-  }, [])
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+    }, 500)
 
-  const filteredAnalyses = analyses.filter(analysis => {
-    const matchesSearch = analysis.fileName.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === 'all' || analysis.status === statusFilter
-    const matchesRisk = riskFilter === 'all' || analysis.analysis?.overallRisk === riskFilter
-    
-    return matchesSearch && matchesStatus && matchesRisk
-  })
+    return () => {
+      clearTimeout(handler)
+    }
+  }, [searchTerm])
+
+  useEffect(() => {
+    const fetchAnalysisHistory = async () => {
+      try {
+        setLoading(true)
+        console.log('Fetching analysis history from API...')
+        
+        const response = await analysisAPI.getHistory({
+          page: 1,
+          limit: 50, // Get more results
+          status: statusFilter === 'all' ? undefined : statusFilter,
+          riskLevel: riskFilter === 'all' ? undefined : riskFilter,
+          search: debouncedSearchTerm || undefined
+        })
+        
+        console.log('Analysis history response:', response)
+        
+        if (response.data && response.data.analyses) {
+          setAnalyses(response.data.analyses)
+        } else {
+          console.warn('No analyses data in response:', response)
+          setAnalyses([])
+        }
+      } catch (error) {
+        console.error('Failed to fetch analysis history:', error)
+        toast.error('Failed to load analysis history')
+        setAnalyses([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchAnalysisHistory()
+  }, [statusFilter, riskFilter, debouncedSearchTerm])
+
+  // Since we're now filtering on the API side, we can just use all analyses
+  const filteredAnalyses = analyses
 
   if (loading) {
     return (

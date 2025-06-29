@@ -4,7 +4,7 @@
  */
 
 // Get API base URL from environment variables
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:7777/api'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
 
 // Clerk session token helper
 const getAuthToken = async (): Promise<string | null> => {
