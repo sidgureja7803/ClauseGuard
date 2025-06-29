@@ -10,8 +10,10 @@ export interface IUsageStats {
   totalUploads: number
   tokensUsed: number
   tokensLimit: number
+  apiCalls: number
   currentPlan: 'free' | 'pro' | 'enterprise'
   lastResetDate: Date
+  lastActive: Date
 }
 
 export interface IUser extends Document {
@@ -36,12 +38,14 @@ const usageStatsSchema = new Schema<IUsageStats>({
   totalUploads: { type: Number, default: 0 },
   tokensUsed: { type: Number, default: 0 },
   tokensLimit: { type: Number, default: 10000 },
+  apiCalls: { type: Number, default: 0 },
   currentPlan: { 
     type: String, 
     default: 'free', 
     enum: ['free', 'pro', 'enterprise'] 
   },
-  lastResetDate: { type: Date, default: Date.now }
+  lastResetDate: { type: Date, default: Date.now },
+  lastActive: { type: Date, default: Date.now }
 }, { _id: false })
 
 const userSchema = new Schema<IUser>({

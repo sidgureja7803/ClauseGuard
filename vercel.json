@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "name": "clauseguard-frontend",
+  "name": "clauseguard",
   "builds": [
     {
       "src": "frontend/package.json",
@@ -20,14 +20,8 @@
       "dest": "/index.html"
     }
   ],
-  "env": {
-    "VITE_CLERK_PUBLISHABLE_KEY": "@clerk_publishable_key",
-    "VITE_API_URL": "@api_url"
-  },
-  "build": {
-    "env": {
-      "VITE_CLERK_PUBLISHABLE_KEY": "@clerk_publishable_key",
-      "VITE_API_URL": "@api_url"
-    }
-  }
+  "installCommand": "cd frontend && npm install",
+  "buildCommand": "cd frontend && npm run build",
+  "outputDirectory": "frontend/dist",
+  "framework": "vite"
 } 

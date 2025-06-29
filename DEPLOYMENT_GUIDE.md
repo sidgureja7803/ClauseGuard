@@ -84,18 +84,17 @@ IBM_GRANITE_API_KEY=your_ibm_granite_api_key
 IBM_GRANITE_BASE_URL=https://us-south.ml.cloud.ibm.com/ml/v1
 
 # Clerk Authentication
-CLERK_PUBLISHABLE_KEY=pk_test_your_clerk_key
-CLERK_SECRET_KEY=sk_test_your_clerk_secret
+CLERK_SECRET_KEY=sk_live_your_clerk_secret_key
 
 # Cloudinary (File Storage)
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
+CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+CLOUDINARY_API_KEY=your_cloudinary_api_key
+CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 
 # App Configuration
 NODE_ENV=production
 PORT=3001
-FRONTEND_URL=https://your-frontend-domain.com
+FRONTEND_URL=https://your-app.vercel.app
 
 # Security
 JWT_SECRET=your_super_secure_jwt_secret_min_32_chars
@@ -103,9 +102,9 @@ JWT_SECRET=your_super_secure_jwt_secret_min_32_chars
 
 #### **Frontend (.env)**
 ```env
-VITE_CLERK_PUBLISHABLE_KEY=pk_test_your_clerk_key
-VITE_API_BASE_URL=https://your-backend-domain.com/api
-VITE_BACKEND_URL=https://your-backend-domain.com
+VITE_CLERK_PUBLISHABLE_KEY=pk_live_your_clerk_publishable_key
+VITE_API_URL=https://your-backend-api.com/api
+VITE_NODE_ENV=production
 ```
 
 ### **2. Install Dependencies**
@@ -150,7 +149,9 @@ services:
     depends_on:
       - mongodb
     environment:
-      - MONGODB_URI=mongodb://mongodb:27017/clauseguard
+      - MONGODB_URI=${MONGODB_URI}
+      - IBM_GRANITE_API_KEY=${IBM_GRANITE_API_KEY}
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
     volumes:
       - ./backend:/app
       - /app/node_modules
@@ -168,151 +169,6 @@ services:
 volumes:
   mongodb_data:
 ```
-
----
-
-## ☁️ **Cloud Deployment Options**
-
-### **Option 1: Vercel + Railway (Recommended)**
-
-#### **Frontend (Vercel)**
-1. Connect GitHub repo to Vercel
-2. Set environment variables in Vercel dashboard
-3. Deploy automatically on push
-
-#### **Backend (Railway)**
-1. Connect GitHub repo to Railway
-2. Add MongoDB service
-3. Set environment variables
-4. Deploy with automatic scaling
-
-### **Option 2: AWS/Digital Ocean**
-
-#### **Backend Deployment**
-```bash
-# On your server
-git clone https://github.com/your-username/clauseguard.git
-cd clauseguard/backend
-npm install
-npm run build
-npm start
-```
-
-#### **Frontend Deployment**
-```bash
-cd ../frontend
-npm install
-npm run build
-# Serve dist/ folder with nginx/apache
-```
-
-### **Option 3: Heroku**
-
-#### **Backend (Heroku)**
-```bash
-cd backend
-heroku create clauseguard-api
-heroku addons:create mongolab:sandbox
-heroku config:set IBM_GRANITE_API_KEY=your_key
-heroku config:set CLERK_SECRET_KEY=your_secret
-git push heroku main
-```
-
-#### **Frontend (Vercel/Netlify)**
-- Connect repo and deploy
-
----
-
-## 🔧 **Database Setup**
-
-### **MongoDB Atlas (Cloud - Recommended)**
-1. Create account at mongodb.com
-2. Create cluster
-3. Get connection string
-4. Add to MONGODB_URI environment variable
-
-### **Local MongoDB**
-```bash
-# Install MongoDB
-brew install mongodb/brew/mongodb-community  # macOS
-sudo apt-get install mongodb  # Ubuntu
-
-# Start MongoDB
-brew services start mongodb-community  # macOS
-sudo systemctl start mongodb  # Ubuntu
-
-# Use connection string
-MONGODB_URI=mongodb://localhost:27017/clauseguard
-```
-
----
-
-## 🧪 **Testing Deployment**
-
-### **1. Health Checks**
-```bash
-# Backend health
-curl https://your-backend-domain.com/health
-
-# AI Agent demo
-curl https://your-backend-domain.com/api/agent/demo
-
-# LangChain demo
-curl https://your-backend-domain.com/api/langchain/demo
-```
-
-### **2. Frontend Test**
-- Visit https://your-frontend-domain.com
-- Test signup/login
-- Upload a contract
-- Try AI Agent analysis
-
----
-
-## 🚀 **Production Optimizations**
-
-### **1. Security**
-- Enable HTTPS/SSL certificates
-- Use strong JWT secrets
-- Implement rate limiting
-- Add CORS restrictions
-- Use helmet.js (already included)
-
-### **2. Performance**
-- Enable Redis for caching
-- Use CDN for static assets
-- Implement database indexing
-- Add monitoring (DataDog, New Relic)
-
-### **3. Monitoring & Logging**
-```bash
-# Add to package.json
-npm install @datadog/browser-rum
-npm install winston-datadog
-```
-
----
-
-## 📊 **AI Agent Features Deployed**
-
-### **✅ Available Endpoints**
-- `POST /api/agent/analyze` - Main agentic analysis
-- `POST /api/agent/continue` - Multi-turn conversations  
-- `GET /api/agent/demo/:scenario` - Demo scenarios
-- `DELETE /api/agent/session/:id` - Clear agent memory
-
-### **✅ Agent Capabilities**
-- Intent classification and goal understanding
-- Dynamic planning and task decomposition
-- Multi-step reasoning with 8+ specialized tools
-- Legal knowledge retrieval and application
-- Self-correction and result refinement
-- Conversation memory and context awareness
-
-### **✅ IBM Granite Model Integration**
-- **Granite 8B Instruct**: Planning, intent classification, risk analysis
-- **Granite Code**: Clause rewriting, legal drafting
-- **Vector Database**: Legal knowledge storage and retrieval
 
 ---
 
@@ -360,3 +216,140 @@ curl -X POST http://localhost:3001/api/agent/demo/risk-analysis
 Your ClauseGuard AI Agent is now ready for production! 🎉
 
 The platform now features true autonomous AI capabilities with multi-step reasoning, dynamic planning, and intelligent tool orchestration - all powered by IBM Granite models. 
+
+## 🚀 Vercel Deployment Steps
+
+### Step 1: Prepare Your Repository
+```bash
+# Ensure your code is committed
+git add .
+git commit -m "Prepare for deployment"
+git push origin main
+```
+
+### Step 2: Configure Vercel Environment Variables
+In your Vercel dashboard, add these environment variables:
+
+**Environment Variables:**
+- `VITE_CLERK_PUBLISHABLE_KEY` = `pk_live_your_actual_clerk_key`
+- `VITE_API_URL` = `https://your-backend-url.com/api`
+- `VITE_NODE_ENV` = `production`
+
+### Step 3: Deploy to Vercel
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Login to Vercel
+vercel login
+
+# Deploy
+vercel --prod
+```
+
+### Alternative: GitHub Integration
+1. Connect your GitHub repository to Vercel
+2. Set environment variables in Vercel dashboard
+3. Deploy automatically on push
+
+## 🔧 Backend Deployment (Railway/Render/Digital Ocean)
+
+### Option 1: Railway
+```bash
+# Install Railway CLI
+npm install -g @railway/cli
+
+# Login and deploy
+railway login
+railway link
+railway up
+```
+
+### Option 2: Render
+1. Connect GitHub repository
+2. Choose "Web Service"
+3. Set build command: `cd backend && npm install && npm run build`
+4. Set start command: `cd backend && npm start`
+5. Add environment variables
+
+### Option 3: Digital Ocean App Platform
+1. Create new app from GitHub
+2. Configure build settings:
+   - Source: `backend/`
+   - Build Command: `npm install && npm run build`
+   - Run Command: `npm start`
+3. Add environment variables
+
+## 📊 **AI Agent Features Deployed**
+
+### **✅ Available Endpoints**
+- `POST /api/agent/analyze` - Main agentic analysis
+- `POST /api/agent/continue` - Multi-turn conversations  
+- `GET /api/agent/demo/:scenario` - Demo scenarios
+- `DELETE /api/agent/session/:id` - Clear agent memory
+
+### **✅ Agent Capabilities**
+- Intent classification and goal understanding
+- Dynamic planning and task decomposition
+- Multi-step reasoning with 8+ specialized tools
+- Legal knowledge retrieval and application
+- Self-correction and result refinement
+- Conversation memory and context awareness
+
+### **✅ IBM Granite Model Integration**
+- **Granite 8B Instruct**: Planning, intent classification, risk analysis
+- **Granite Code**: Clause rewriting, legal drafting
+- **Vector Database**: Legal knowledge storage and retrieval
+
+## 📊 Monitoring & Analytics
+
+### Health Checks
+```bash
+# Backend health
+curl https://your-backend.com/health
+
+# Frontend health
+curl https://your-app.vercel.app
+```
+
+### Logging
+- Enable structured logging in production
+- Monitor API response times
+- Track error rates
+- Set up alerts for critical issues
+
+## 🔄 CI/CD Pipeline
+
+### GitHub Actions Example
+```yaml
+name: Deploy to Production
+on:
+  push:
+    branches: [main]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v20
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.ORG_ID }}
+          vercel-project-id: ${{ secrets.PROJECT_ID }}
+```
+
+## 📞 Support
+
+If you encounter deployment issues:
+1. Check the logs in Vercel dashboard
+2. Verify all environment variables
+3. Test API endpoints individually
+4. Check network connectivity
+
+**Quick Fix for Vercel Error:**
+The error you're seeing means Vercel can't find the environment variable. Set these in your Vercel dashboard:
+- Go to your project settings
+- Navigate to "Environment Variables"
+- Add: `VITE_CLERK_PUBLISHABLE_KEY` with your actual Clerk key
+- Redeploy 

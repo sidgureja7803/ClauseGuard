@@ -1,0 +1,37 @@
+NON-DISCLOSURE AGREEMENT
+
+This Non-Disclosure Agreement ("NDA") is entered into between CloudTech Innovations ("Disclosing Party") and Alex Rodriguez ("Receiving Party") on February 20, 2024.
+
+1. PURPOSE
+The parties wish to explore a potential business relationship involving the disclosure of confidential information.
+
+2. DEFINITION OF CONFIDENTIAL INFORMATION
+Confidential Information includes all technical data, trade secrets, know-how, research, product plans, products, services, customers, customer lists, markets, software, developments, inventions, processes, formulas, technology, designs, drawings, engineering, hardware configuration information, marketing, finances, or other business information.
+
+3. OBLIGATIONS OF RECEIVING PARTY
+Receiving Party agrees to:
+- Hold all Confidential Information in strict confidence
+- Not disclose any Confidential Information to third parties
+- Use Confidential Information solely for evaluation purposes
+- Return all materials containing Confidential Information upon request
+
+4. TERM
+This agreement shall remain in effect for a period of 10 years from the date of execution.
+
+5. REMEDIES
+Receiving Party acknowledges that disclosure of Confidential Information would cause irreparable harm to Disclosing Party, entitling Disclosing Party to seek injunctive relief and unlimited monetary damages.
+
+6. NO REVERSE ENGINEERING
+Receiving Party agrees not to reverse engineer, disassemble, or decompile any proprietary software or technology disclosed.
+
+7. SURVIVAL
+The obligations herein shall survive termination of this agreement indefinitely.
+
+8. GOVERNING LAW
+This agreement shall be governed by the laws of Delaware.
+
+IN WITNESS WHEREOF, the parties have executed this NDA.
+
+Disclosing Party: CloudTech Innovations    Receiving Party: Alex Rodriguez
+Signature: _________________________      Signature: ____________________
+Date: ______________________________      Date: _________________________ 

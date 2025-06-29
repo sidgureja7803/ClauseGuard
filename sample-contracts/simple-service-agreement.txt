@@ -1,0 +1,34 @@
+SERVICE AGREEMENT
+
+This Service Agreement ("Agreement") is entered into on January 15, 2024, between TechCorp Solutions, LLC ("Provider") and Global Innovations Inc. ("Client").
+
+1. SERVICES
+Provider agrees to deliver software development services including web application development, API integration, and technical consulting as detailed in Exhibit A.
+
+2. PAYMENT TERMS
+Client shall pay Provider $5,000 per month, due on the first day of each month. Late payments will incur a 1.5% monthly service charge.
+
+3. TERM AND TERMINATION
+This agreement begins on February 1, 2024, and continues for 12 months. Either party may terminate with 30 days written notice.
+
+4. INTELLECTUAL PROPERTY
+All work products, code, and deliverables created under this agreement shall become the exclusive property of Client upon full payment.
+
+5. LIABILITY LIMITATION
+Provider's total liability under this agreement shall not exceed the amount paid by Client in the preceding 12 months.
+
+6. CONFIDENTIALITY
+Both parties agree to maintain confidentiality of proprietary information shared during the performance of this agreement.
+
+7. NON-COMPETE
+Provider agrees not to directly compete with Client's core business activities during the term of this agreement and for 6 months thereafter.
+
+8. GOVERNING LAW
+This agreement shall be governed by the laws of California, USA.
+
+IN WITNESS WHEREOF, the parties have executed this Agreement as of the date first written above.
+
+TechCorp Solutions, LLC          Global Innovations Inc.
+_______________________         _______________________
+Sarah Johnson, CEO               Michael Chen, CTO
+Date: _______________           Date: _______________ 

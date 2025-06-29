@@ -21,7 +21,7 @@ import { clerkMiddleware } from './middleware/auth'
 dotenv.config()
 
 const app = express()
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT || 7777
 
 // Logger configuration
 const logger = winston.createLogger({
@@ -47,7 +47,12 @@ if (process.env.NODE_ENV !== 'production') {
 // Middleware
 app.use(helmet())
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:4173', // Vite preview port
+    'http://localhost:5173', // Vite dev port
+    ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : [])
+  ],
   credentials: true
 }))
 app.use(express.json({ limit: '10mb' }))

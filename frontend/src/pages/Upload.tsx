@@ -2,8 +2,8 @@ import { useState, useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { Upload as UploadIcon, File, AlertCircle, CheckCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
 import toast from 'react-hot-toast'
+import api from '@/lib/api'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
 const Upload = () => {
@@ -42,11 +42,7 @@ const Upload = () => {
 
       const uploadToast = toast.loading('Uploading contract...')
 
-      const response = await axios.post('/api/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      })
+      const response = await api.upload.uploadFile(formData)
 
       toast.dismiss(uploadToast)
       toast.loading('Analyzing contract with AI...', { duration: 8000 })

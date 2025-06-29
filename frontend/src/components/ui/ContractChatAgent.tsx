@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Send, MessageSquare, Bot, User, FileText, Sparkles, Lightbulb, AlertTriangle } from 'lucide-react'
+import { Send, Bot, User, Sparkles, Lightbulb } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import api from '@/lib/api'
 import IBMBadge from './IBMBadge'
 
 // Extend window interface for Clerk
@@ -31,7 +32,6 @@ interface ContractChatAgentProps {
 }
 
 const ContractChatAgent: React.FC<ContractChatAgentProps> = ({
-  contractId,
   contractTitle = "Contract Analysis",
   onClose
 }) => {
@@ -113,21 +113,14 @@ const ContractChatAgent: React.FC<ContractChatAgentProps> = ({
 
       // For first message, start new analysis
       if (messages.length === 1) {
-        const analysisResponse = await fetch('/api/contract-agent/analyze', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            contractText: `Sample contract content for analysis. User question: ${currentInput}`,
+        const analysisResult = await api.contractAgent.analyze({
+          query: currentInput,
+          contractText: `Sample contract content for analysis. User question: ${currentInput}`,
+          context: {
             userGoal: currentInput,
             sessionId
-          })
+          }
         })
-
-        if (!analysisResponse.ok) {
-          throw new Error(`Analysis failed: ${analysisResponse.statusText}`)
-        }
-
-        const analysisResult = await analysisResponse.json()
         
         // Remove loading message and add real response
         setMessages(prev => {
@@ -148,20 +141,10 @@ const ContractChatAgent: React.FC<ContractChatAgentProps> = ({
         })
       } else {
         // Continue existing conversation
-        const continueResponse = await fetch('/api/contract-agent/continue', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            sessionId,
-            followUpQuestion: currentInput
-          })
+        const continueResult = await api.contractAgent.continue({
+          sessionId,
+          message: currentInput
         })
-
-        if (!continueResponse.ok) {
-          throw new Error(`Continue conversation failed: ${continueResponse.statusText}`)
-        }
-
-        const continueResult = await continueResponse.json()
         
         // Remove loading message and add real response
         setMessages(prev => {
