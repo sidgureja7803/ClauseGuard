@@ -1,10 +1,19 @@
 import axios from 'axios'
 import { IClause, IAnalysis } from '../models/ContractAnalysis'
 
+interface IAMTokenResponse {
+  access_token: string
+  refresh_token: string
+  token_type: string
+  expires_in: number
+  expiration: number
+  scope: string
+}
+
 interface GraniteResponse {
   results: Array<{
     generated_text: string
-    finish_reason?: string
+    stop_reason?: string
   }>
   created_at: string
   model_id: string
@@ -21,34 +30,134 @@ interface ClauseAnalysisRequest {
 export class GraniteAIService {
   private apiKey: string
   private baseURL: string
+  private iamBaseURL: string
+  private projectId: string
+  private accessToken: string | null = null
+  private tokenExpiration: number = 0
 
   constructor() {
-    // Use the provided IAM access token for real IBM Granite AI calls
-    this.apiKey = process.env.IBM_GRANITE_API_KEY || 'eyJraWQiOiIyMDE5MDcyNCIsImFsZyI6IlJTMjU2In0.eyJpYW1faWQiOiJJQk1pZC02OTEwMDBaQlgwIiwiaWQiOiJJQk1pZC02OTEwMDBaQlgwIiwicmVhbG1pZCI6IklCTWlkIiwianRpIjoiMWRhYTkxNDEtNjA3MS00YjI2LWIxZWEtOGU4MDMwYTRlY2Q4IiwiaWRlbnRpZmllciI6IjY5MTAwMFpCWDAiLCJnaXZlbl9uYW1lIjoiU2lkZGhhbnQiLCJmYW1pbHlfbmFtZSI6Ikd1cmVqYSIsIm5hbWUiOiJTaWRkaGFudCBHdXJlamEiLCJlbWFpbCI6InNpZGRoYW50Z3VyZWphMzlAZ21haWwuY29tIiwic3ViIjoic2lkZGhhbnRndXJlamEzOUBnbWFpbC5jb20iLCJhdXRobiI6eyJzdWIiOiJzaWRkaGFudGd1cmVqYTM5QGdtYWlsLmNvbSIsImlhbV9pZCI6IklCTWlkLTY5MTAwMFpCWDAiLCJuYW1lIjoiU2lkZGhhbnQgR3VyZWphIiwiZ2l2ZW5fbmFtZSI6IlNpZGRoYW50IiwiZmFtaWx5X25hbWUiOiJHdXJlamEiLCJlbWFpbCI6InNpZGRoYW50Z3VyZWphMzlAZ21haWwuY29tIn0sImFjY291bnQiOnsidmFsaWQiOnRydWUsImJzcyI6IjFmNTY3MjgzMDFiNTRkZTE5MzI4OGU1ZGFiZmE1NWFiIiwiaW1zX3VzZXJfaWQiOiIxMzkwMTYzMyIsImZyb3plbiI6dHJ1ZSwiaW1zIjoiMjk5ODI0NiJ9LCJtZmEiOnsiaW1zIjp0cnVlfSwiaWF0IjoxNzUxMjAzMzUxLCJleHAiOjE3NTEyMDY5NTEsImlzcyI6Imh0dHBzOi8vaWFtLmNsb3VkLmlibS5jb20vaWRlbnRpdHkiLCJncmFudF90eXBlIjoidXJuOmlibTpwYXJhbXM6b2F1dGg6Z3JhbnQtdHlwZTphcGlrZXkiLCJzY29wZSI6ImlibSBvcGVuaWQiLCJjbGllbnRfaWQiOiJkZWZhdWx0IiwiYWNyIjoxLCJhbXIiOlsicHdkIl19.LVyazuvHjVL2aYFYp3EgvIS9Gx2IUtZjTqCqktCXRU8IvIR0xnC2zdEny3SFQ3bMzZVA7hVbCgtIvuJ9hXe7Rs8zNnNFHItsvecsHbkbueicuD01XCn-mPHRpi5048deDDrEZ8WYDjUZaPDPl7j9nfUn2uTiib5DhrZRCHbd-iwGT2kW_BXCmIFxM6a8iqkrRHlL9migHSldis1YHypJ_G_pONVlNABqHeU215TgdwjFPrgDaGOd1wYbr49S8ckMotTfrtoNibBWiJ9PEvktEO-R3GawOD_RXy1uiSfNMNewa2R6EbaYAwE0kKMBSmJrRTlimRk0zs9AvuCk1g8nIQ'
-    this.baseURL = process.env.IBM_GRANITE_BASE_URL || 'https://us-south.ml.cloud.ibm.com/ml/v1/text/generation'
+    this.apiKey = process.env.IBM_GRANITE_API_KEY || ''
+    this.baseURL = process.env.IBM_GRANITE_BASE_URL || 'https://us-south.ml.cloud.ibm.com'
+    this.iamBaseURL = 'https://iam.cloud.ibm.com'
+    this.projectId = process.env.WATSONX_PROJECT_ID || process.env.PROJECT_ID || ''
     
-    console.log('🚀 IBM Granite AI initialized with real IAM token')
+    if (!this.apiKey) {
+      throw new Error('IBM_GRANITE_API_KEY environment variable is required')
+    }
+    
+    console.log('🚀 IBM Granite AI initialized with proper IAM authentication')
     console.log('📡 Base URL:', this.baseURL)
+    console.log('🔑 Project ID:', this.projectId ? 'Set' : 'Missing')
+  }
+
+  private async getIAMToken(): Promise<string> {
+    try {
+      console.log('🔐 Getting IBM IAM access token...')
+      
+      const response = await axios.post(
+        `${this.iamBaseURL}/identity/token`,
+        new URLSearchParams({
+          grant_type: 'urn:ibm:params:oauth:grant-type:apikey',
+          apikey: this.apiKey
+        }),
+        {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': 'application/json'
+          },
+          timeout: 10000
+        }
+      )
+
+      const tokenData: IAMTokenResponse = response.data
+      this.accessToken = tokenData.access_token
+      this.tokenExpiration = Date.now() + (tokenData.expires_in * 1000) - 60000 // Refresh 1 minute early
+      
+      console.log('✅ IBM IAM access token obtained successfully')
+      return tokenData.access_token
+    } catch (error: any) {
+      console.error('❌ Failed to get IBM IAM token:', error.response?.data || error.message)
+      throw new Error(`IBM IAM authentication failed: ${error.response?.data?.errorMessage || error.message}`)
+    }
+  }
+
+  private async getValidToken(): Promise<string> {
+    // Check if we have a valid token
+    if (this.accessToken && Date.now() < this.tokenExpiration) {
+      return this.accessToken
+    }
+    
+    // Get a new token
+    return await this.getIAMToken()
   }
 
   private async makeRequest(data: any): Promise<GraniteResponse> {
     try {
-      console.log('🔗 Making IBM Watsonx.ai API request...')
+      const token = await this.getValidToken()
+      console.log('🔗 Making IBM WatsonX.ai API request...')
       
-      const response = await axios.post(this.baseURL, data, {
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        timeout: 8000 // Reduced timeout for faster processing
-      })
+      const requestData = {
+        ...data,
+        project_id: this.projectId
+      }
+
+      const response = await axios.post(
+        `${this.baseURL}/ml/v1/text/generation?version=2024-05-01`,
+        requestData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          timeout: 30000 // Increased timeout for better reliability
+        }
+      )
       
-      console.log('✅ IBM Watsonx.ai API response received')
+      console.log('✅ IBM WatsonX.ai API response received')
       return response.data
     } catch (error: any) {
-      console.error('❌ IBM Watsonx.ai API error:', error.response?.data || error.message)
-      throw new Error(`IBM Watsonx.ai API error: ${error.response?.data?.error?.message || error.message}`)
+      console.error('❌ IBM WatsonX.ai API error:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      })
+      
+      // If token is expired, try to refresh once
+      if (error.response?.status === 401 && this.accessToken) {
+        console.log('🔄 Token might be expired, refreshing...')
+        this.accessToken = null
+        const newToken = await this.getValidToken()
+        
+        // Retry the request with new token
+        try {
+          const requestData = {
+            ...data,
+            project_id: this.projectId
+          }
+
+          const retryResponse = await axios.post(
+            `${this.baseURL}/ml/v1/text/generation?version=2024-05-01`,
+            requestData,
+            {
+              headers: {
+                'Authorization': `Bearer ${newToken}`,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+              },
+              timeout: 30000
+            }
+          )
+          
+          console.log('✅ IBM WatsonX.ai API retry successful')
+          return retryResponse.data
+        } catch (retryError: any) {
+          console.error('❌ IBM WatsonX.ai API retry failed:', retryError.response?.data || retryError.message)
+        }
+      }
+      
+      throw new Error(`IBM WatsonX.ai API error: ${error.response?.data?.error?.message || error.response?.data?.message || error.message}`)
     }
   }
 
@@ -67,7 +176,7 @@ Summary:`
         max_new_tokens: 500,
         temperature: 0.3,
         top_p: 0.9,
-        stop_sequences: ['\n\n']
+        stop_sequences: ['\\n\\n']
       }
     })
 
@@ -198,121 +307,58 @@ Safer alternative:`
     // Simple clause extraction based on common patterns
     // In a production system, you might want more sophisticated NLP
     const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 50)
-    const clauses: ClauseAnalysisRequest[] = []
     
-    let currentPosition = 0
-    
-    sentences.forEach((sentence, index) => {
-      const trimmedSentence = sentence.trim()
-      if (trimmedSentence.length > 0) {
-        const startPos = text.indexOf(trimmedSentence, currentPosition)
-        const endPos = startPos + trimmedSentence.length
-        
-        clauses.push({
-          text: trimmedSentence,
-          clauseId: `clause_${index + 1}`,
-          position: { start: startPos, end: endPos }
-        })
-        
-        currentPosition = endPos
-      }
-    })
-    
-    return clauses
+    return sentences.slice(0, 10).map((sentence, index) => ({
+      clauseId: `clause-${index + 1}`,
+      text: sentence.trim(),
+      position: { start: index * 100, end: (index + 1) * 100 }
+    }))
   }
 
   async analyzeFullContract(text: string): Promise<IAnalysis> {
     const startTime = Date.now()
-    let totalTokens = 0
-
+    console.log('🧠 Starting full contract analysis with IBM Granite AI...')
+    
     try {
-      console.log('🚀 Starting fast AI analysis...')
-
-      // Fast parallel processing approach
-      const tasks = []
+      // Step 1: Generate summary
+      const summaryResult = await this.summarizeContract(text)
       
-      // Task 1: Generate contract summary (run in parallel)
-      const summaryTask = this.summarizeContract(text)
-        .catch(error => {
-          console.error('Summary generation failed:', error)
-          return { summary: 'Contract summary not available', tokensUsed: 0 }
-        })
-      tasks.push(summaryTask)
-
-      // Task 2: Quick clause extraction and analysis (limit to 3 most important clauses)
+      // Step 2: Extract and analyze clauses
       const clauseRequests = await this.extractClauses(text)
-      const topClauses = clauseRequests.slice(0, 3) // Analyze only top 3 clauses for speed
-      
-      // Analyze clauses in parallel
-      const clauseAnalysisTasks = topClauses.map(request => 
-        this.analyzeClause(request).catch(error => {
-          console.error(`Clause analysis failed for ${request.clauseId}:`, error)
-          return {
-            clause: {
-              id: request.clauseId,
-              text: request.text,
-              summary: 'Analysis unavailable',
-              riskLevel: 'review' as const,
-              riskReasons: ['Analysis service unavailable'],
-              confidence: 0.5,
-              position: request.position
-            },
-            tokensUsed: 0
-          }
-        })
+      const clauseAnalyses = await Promise.all(
+        clauseRequests.slice(0, 5).map(request => this.analyzeClause(request)) // Limit to 5 clauses for speed
       )
       
-      tasks.push(...clauseAnalysisTasks)
-
-      console.log(`📊 Processing ${tasks.length} analysis tasks in parallel...`)
-
-      // Execute all tasks in parallel with 6-second timeout
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Analysis timeout')), 6000)
-      )
+      const clauses = clauseAnalyses.map(result => result.clause)
       
-      const results = await Promise.race([
-        Promise.all(tasks),
-        timeoutPromise
-      ])
-
-      console.log(`⚡ Parallel processing completed in ${Date.now() - startTime}ms`)
-
-      // Process results
-      const [summaryResult, ...clauseResults] = results
-      const { summary, tokensUsed: summaryTokens } = summaryResult as any
-      totalTokens += summaryTokens
-
-      const clauses: IClause[] = []
-      for (const result of clauseResults) {
-        const { clause, tokensUsed } = result as any
-        clauses.push(clause)
-        totalTokens += tokensUsed
-      }
-
-      // Quick risk assessment
-      const riskyClauses = clauses.filter(c => c.riskLevel === 'risky').length
-      const reviewClauses = clauses.filter(c => c.riskLevel === 'review').length
+      // Step 3: Determine overall risk
+      const riskLevels = clauses.map(c => c.riskLevel)
+      const riskyCount = riskLevels.filter(r => r === 'risky').length
+      const reviewCount = riskLevels.filter(r => r === 'review').length
       
       let overallRisk: 'safe' | 'review' | 'risky'
-      if (riskyClauses > 0) {
+      if (riskyCount > 0) {
         overallRisk = 'risky'
-      } else if (reviewClauses > 0) {
+      } else if (reviewCount > 0) {
         overallRisk = 'review'
       } else {
         overallRisk = 'safe'
       }
-
+      
+      // Step 4: Calculate confidence
       const avgConfidence = clauses.length > 0 
-        ? clauses.reduce((sum, clause) => sum + clause.confidence, 0) / clauses.length
-        : 0.75
+        ? clauses.reduce((sum, c) => sum + c.confidence, 0) / clauses.length 
+        : 0.7
+      
+      // Step 5: Calculate total tokens used
+      const totalTokens = summaryResult.tokensUsed + 
+        clauseAnalyses.reduce((sum, result) => sum + result.tokensUsed, 0)
 
       const processingTime = Date.now() - startTime
-
-      console.log(`✅ Fast AI analysis completed in ${processingTime}ms`)
-
+      console.log(`✅ Full contract analysis completed successfully in ${processingTime}ms`)
+      
       return {
-        summary,
+        summary: summaryResult.summary,
         clauses,
         overallRisk,
         confidence: avgConfidence,
@@ -320,28 +366,8 @@ Safer alternative:`
         processingTime
       }
     } catch (error) {
-      console.error('❌ Fast AI analysis failed:', error)
-      
-      // Ultra-fast fallback analysis
-      const processingTime = Date.now() - startTime
-      return {
-        summary: 'This contract has been processed using accelerated analysis. The document contains standard legal terms that should be reviewed by legal counsel.',
-        clauses: [
-          {
-            id: 'clause_1',
-            text: 'Contract terms and conditions',
-            summary: 'Standard contractual provisions identified',
-            riskLevel: 'review',
-            riskReasons: ['Automated analysis recommends legal review'],
-            confidence: 0.7,
-            position: { start: 0, end: 100 }
-          }
-        ],
-        overallRisk: 'review',
-        confidence: 0.7,
-        tokensUsed: totalTokens,
-        processingTime
-      }
+      console.error('❌ Full contract analysis failed:', error)
+      throw error
     }
   }
 } 

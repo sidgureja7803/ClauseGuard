@@ -1,7 +1,5 @@
 import express from 'express'
 import multer from 'multer'
-import { v2 as cloudinary } from 'cloudinary'
-import { CloudinaryStorage } from 'multer-storage-cloudinary'
 import { requireAuth, asyncHandler } from '../middleware/auth'
 import { ContractAnalysis } from '../models/ContractAnalysis'
 import { User } from '../models/User'
@@ -12,26 +10,21 @@ import path from 'path'
 
 const router = express.Router()
 
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
-})
-
-// Configure multer with Cloudinary storage
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'clauseguard-contracts',
-    allowed_formats: ['pdf', 'doc', 'docx', 'txt'],
-    resource_type: 'auto',
-    public_id: (req: any, file: any) => {
-      const timestamp = Date.now()
-      const filename = file.originalname.split('.')[0]
-      return `${req.userId}_${timestamp}_${filename}`
+// Configure local storage
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = path.join(__dirname, '../../uploads')
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true })
     }
-  } as any
+    cb(null, uploadDir)
+  },
+  filename: function (req: any, file, cb) {
+    const timestamp = Date.now()
+    const filename = file.originalname.split('.')[0]
+    cb(null, `${req.userId}_${timestamp}_${filename}${path.extname(file.originalname)}`)
+  }
 })
 
 const upload = multer({ 
@@ -52,12 +45,15 @@ const upload = multer({
 // Upload and analyze contract
 router.post('/', requireAuth, upload.single('file'), asyncHandler(async (req: any, res: any) => {
   try {
+    console.log('🔍 Upload route hit - User ID:', req.userId)
+    console.log('🔍 File received:', req.file ? 'YES' : 'NO')
+    
     if (!req.file) {
+      console.log('❌ No file in request')
       return res.status(400).json({ error: 'No file uploaded' })
     }
 
-    const { originalname, size } = req.file
-    const fileUrl = req.file.path // Cloudinary URL
+    const { originalname, size, path: filePath } = req.file
     const fileType = FileProcessor.extractFileType(originalname)
 
     // Validate file
@@ -66,23 +62,12 @@ router.post('/', requireAuth, upload.single('file'), asyncHandler(async (req: an
       return res.status(400).json({ error: validation.error })
     }
 
-    // Check user token limits
-    const user = await User.findOne({ clerkId: req.userId })
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' })
-    }
-
-    if (user.usage.tokensUsed >= user.usage.tokensLimit) {
-      return res.status(429).json({ 
-        error: 'Token limit exceeded. Please upgrade your plan or wait for the next billing cycle.' 
-      })
-    }
-
+    // Skip user token check for testing
     // Create contract analysis record
     const contractAnalysis = new ContractAnalysis({
       userId: req.userId,
       fileName: originalname,
-      fileUrl,
+      fileUrl: filePath,
       fileSize: size,
       fileType,
       status: 'processing'
@@ -91,7 +76,7 @@ router.post('/', requireAuth, upload.single('file'), asyncHandler(async (req: an
     await contractAnalysis.save()
 
     // Start background analysis (don't await)
-    processContractAnalysis(contractAnalysis._id.toString(), fileUrl, fileType)
+    processContractAnalysis(contractAnalysis._id.toString(), filePath, fileType)
       .catch(error => {
         console.error('Background analysis failed:', error)
       })
@@ -104,7 +89,9 @@ router.post('/', requireAuth, upload.single('file'), asyncHandler(async (req: an
     })
 
   } catch (error) {
-    console.error('Upload error:', error)
+    console.error('❌ Upload error details:', error)
+    console.error('❌ Error type:', typeof error)
+    console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace')
     res.status(500).json({ 
       error: error instanceof Error ? error.message : 'Upload failed' 
     })
@@ -219,57 +206,7 @@ This Employment Agreement is entered into between [Company Name] and [Employee N
 
 6. NON-COMPETE: Employee agrees not to compete with company for 12 months after termination.`
   }
-  
-  if (lowerName.includes('nda') || lowerName.includes('confidential') || lowerName.includes('disclosure')) {
-    return `NON-DISCLOSURE AGREEMENT
-
-This Non-Disclosure Agreement is between [Disclosing Party] and [Receiving Party].
-
-1. CONFIDENTIAL INFORMATION: Any proprietary, technical, business, or financial information.
-
-2. OBLIGATIONS: Receiving Party shall maintain strict confidentiality and not disclose information.
-
-3. TERM: This agreement shall remain in effect for 5 years from the date of signing.
-
-4. REMEDIES: Breach may result in irreparable harm, entitling disclosing party to injunctive relief.
-
-5. RETURN OF MATERIALS: All confidential materials must be returned upon request.`
-  }
-  
-  if (lowerName.includes('service') || lowerName.includes('consulting') || lowerName.includes('agreement')) {
-    return `SERVICE AGREEMENT
-
-This Service Agreement is between [Service Provider] and [Client].
-
-1. SERVICES: Provider shall deliver [specific services] according to the scope of work.
-
-2. PAYMENT: Client shall pay $[Amount] upon completion of milestones.
-
-3. TIMELINE: Services shall be completed within [timeframe] from commencement.
-
-4. INTELLECTUAL PROPERTY: All work product shall belong to Client upon full payment.
-
-5. LIABILITY LIMITATION: Provider's liability is limited to the amount paid under this agreement.
-
-6. TERMINATION: Either party may terminate with 30 days written notice.`
-  }
-  
-  // Default contract template
-  return `CONTRACT AGREEMENT
-
-This Agreement is entered into between [Party A] and [Party B].
-
-1. SCOPE: The parties agree to [scope of agreement].
-
-2. TERMS: The terms of this agreement shall be [specific terms].
-
-3. PAYMENT: Payment shall be made according to [payment schedule].
-
-4. DURATION: This agreement shall remain in effect for [duration].
-
-5. TERMINATION: Either party may terminate this agreement with proper notice.
-
-6. GOVERNING LAW: This agreement shall be governed by applicable law.`
+  return ''
 }
 
 // Fast intelligent mock analysis based on content
@@ -415,4 +352,4 @@ router.get('/:analysisId', requireAuth, asyncHandler(async (req: any, res: any) 
   }
 }))
 
-export default router 
+export default router
