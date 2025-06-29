@@ -28,7 +28,7 @@ const Layout = ({ children }: LayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="h-screen flex bg-gray-50 overflow-hidden">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
@@ -39,8 +39,8 @@ const Layout = ({ children }: LayoutProps) => {
       {/* Sidebar */}
       <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } lg:translate-x-0 transition-transform duration-300 ease-in-out lg:static lg:inset-0`}>
-        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
+      } lg:translate-x-0 transition-transform duration-300 ease-in-out lg:static lg:flex lg:flex-col`}>
+        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 flex-shrink-0">
           <Link to="/dashboard" className="flex items-center space-x-2">
             <Shield className="h-8 w-8 text-primary-600" />
             <span className="text-xl font-bold text-gray-900">ClauseGuard</span>
@@ -53,7 +53,7 @@ const Layout = ({ children }: LayoutProps) => {
           </button>
         </div>
         
-        <nav className="flex-1 px-4 py-6 space-y-1">
+        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
           {navigation.map((item) => {
             const isActive = location.pathname === item.href
             return (
@@ -79,10 +79,10 @@ const Layout = ({ children }: LayoutProps) => {
         </nav>
       </div>
 
-      {/* Main content */}
-      <div className="lg:pl-64 flex flex-col min-h-screen">
+      {/* Main content area */}
+      <div className="flex flex-col flex-1 overflow-hidden lg:pl-0">
         {/* Top navigation */}
-        <header className="bg-white border-b border-gray-200 px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <header className="bg-white border-b border-gray-200 px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between flex-shrink-0">
           <button
             onClick={() => setSidebarOpen(true)}
             className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500"
@@ -102,8 +102,10 @@ const Layout = ({ children }: LayoutProps) => {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">
-          {children}
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-4 sm:p-6 lg:p-8 h-full">
+            {children}
+          </div>
         </main>
       </div>
     </div>

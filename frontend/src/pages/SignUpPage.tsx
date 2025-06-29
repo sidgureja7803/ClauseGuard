@@ -34,13 +34,13 @@ const SignUpPage = () => {
 
     try {
       const result = await signUp.create({
-        firstName,
-        lastName,
         emailAddress: email,
         password,
       })
 
+      // Add name info after creation
       if (result.status === 'missing_requirements') {
+        // Try to update with names after email verification
         await signUp.prepareEmailAddressVerification({ strategy: 'email_code' })
         setVerifying(true)
       } else if (result.status === 'complete') {
@@ -72,6 +72,18 @@ const SignUpPage = () => {
 
       if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId })
+        
+        // Try to update user with names after successful signup
+        try {
+          await signUp.update({
+            firstName,
+            lastName,
+          })
+        } catch (nameError) {
+          console.log('Could not add names:', nameError)
+          // Continue anyway - names can be added later
+        }
+        
         navigate('/dashboard')
       }
     } catch (err: any) {
