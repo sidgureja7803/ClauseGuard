@@ -19,11 +19,43 @@ export interface IUsageStats {
 export interface IUser extends Document {
   clerkId: string
   email: string
-  firstName?: string
-  lastName?: string
+  name: string
   imageUrl?: string
-  preferences: IUserPreferences
-  usage: IUsageStats
+  usage: {
+    totalUploads: number
+    tokensUsed: number
+    tokensLimit: number
+    apiCalls: number
+    lastActive: Date
+    currentPlan: 'free' | 'pro' | 'enterprise'
+  }
+  agentMemory: {
+    contractHistory: Array<{
+      contractId: string
+      contractType: string
+      riskLevel: string
+      userPreferences: Record<string, any>
+      timestamp: Date
+    }>
+    feedbackHistory: Array<{
+      analysisId: string
+      suggestionId: string
+      feedbackType: 'helpful' | 'not_helpful' | 'corrected'
+      userCorrection?: string
+      timestamp: Date
+    }>
+    learnedPatterns: Array<{
+      pattern: string
+      userPreference: string
+      confidence: number
+      lastUsed: Date
+    }>
+  }
+  agentPreferences: {
+    preferredAnalysisDepth: 'quick' | 'standard' | 'thorough'
+    prioritizedRisks: string[]
+    notificationSettings: Record<string, boolean>
+  }
   createdAt: Date
   updatedAt: Date
 }
@@ -60,16 +92,59 @@ const userSchema = new Schema<IUser>({
     required: true, 
     unique: true 
   },
-  firstName: { type: String },
-  lastName: { type: String },
-  imageUrl: { type: String },
-  preferences: { 
-    type: userPreferencesSchema, 
-    default: () => ({}) 
+  name: { 
+    type: String, 
+    required: true 
   },
-  usage: { 
-    type: usageStatsSchema, 
-    default: () => ({}) 
+  imageUrl: { 
+    type: String 
+  },
+  usage: {
+    totalUploads: { type: Number, default: 0 },
+    tokensUsed: { type: Number, default: 0 },
+    tokensLimit: { type: Number, default: 10000 },
+    apiCalls: { type: Number, default: 0 },
+    lastActive: { type: Date, default: Date.now },
+    currentPlan: { 
+      type: String, 
+      enum: ['free', 'pro', 'enterprise'], 
+      default: 'free' 
+    }
+  },
+  agentMemory: {
+    contractHistory: [{
+      contractId: { type: String, required: true },
+      contractType: { type: String, required: true },
+      riskLevel: { type: String, required: true },
+      userPreferences: { type: Schema.Types.Mixed, default: {} },
+      timestamp: { type: Date, default: Date.now }
+    }],
+    feedbackHistory: [{
+      analysisId: { type: String, required: true },
+      suggestionId: { type: String, required: true },
+      feedbackType: { 
+        type: String, 
+        enum: ['helpful', 'not_helpful', 'corrected'], 
+        required: true 
+      },
+      userCorrection: { type: String },
+      timestamp: { type: Date, default: Date.now }
+    }],
+    learnedPatterns: [{
+      pattern: { type: String, required: true },
+      userPreference: { type: String, required: true },
+      confidence: { type: Number, default: 0.5, min: 0, max: 1 },
+      lastUsed: { type: Date, default: Date.now }
+    }]
+  },
+  agentPreferences: {
+    preferredAnalysisDepth: { 
+      type: String, 
+      enum: ['quick', 'standard', 'thorough'], 
+      default: 'standard' 
+    },
+    prioritizedRisks: [{ type: String }],
+    notificationSettings: { type: Schema.Types.Mixed, default: {} }
   }
 }, {
   timestamps: true

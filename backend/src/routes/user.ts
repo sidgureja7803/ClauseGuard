@@ -14,12 +14,12 @@ router.get('/profile', requireAuth, asyncHandler(async (req: any, res: any) => {
     }
 
     res.json({
-      id: user.clerkId,
+      id: user._id,
+      clerkId: user.clerkId,
       email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
+      name: user.name,
       imageUrl: user.imageUrl,
-      preferences: user.preferences,
+      agentPreferences: user.agentPreferences,
       usage: user.usage,
       createdAt: user.createdAt
     })
@@ -119,7 +119,13 @@ router.get('/dashboard/recent-uploads', requireAuth, asyncHandler(async (req: an
 // Update user preferences
 router.put('/preferences', requireAuth, asyncHandler(async (req: any, res: any) => {
   try {
-    const { emailNotifications, analysisAlerts, weeklyReports } = req.body
+    const { 
+      emailNotifications, 
+      analysisAlerts, 
+      weeklyReports,
+      preferredAnalysisDepth,
+      prioritizedRisks 
+    } = req.body
 
     const user = await User.findOne({ clerkId: req.userId })
     if (!user) {
@@ -127,22 +133,28 @@ router.put('/preferences', requireAuth, asyncHandler(async (req: any, res: any) 
     }
 
     // Update preferences
-    if (typeof emailNotifications === 'boolean') {
-      user.preferences.emailNotifications = emailNotifications
+    if (emailNotifications !== undefined) {
+      user.agentPreferences.notificationSettings.emailNotifications = emailNotifications
     }
-    if (typeof analysisAlerts === 'boolean') {
-      user.preferences.analysisAlerts = analysisAlerts
+    if (analysisAlerts !== undefined) {
+      user.agentPreferences.notificationSettings.analysisAlerts = analysisAlerts
     }
-    if (typeof weeklyReports === 'boolean') {
-      user.preferences.weeklyReports = weeklyReports
+    if (weeklyReports !== undefined) {
+      user.agentPreferences.notificationSettings.weeklyReports = weeklyReports
+    }
+    if (preferredAnalysisDepth !== undefined) {
+      user.agentPreferences.preferredAnalysisDepth = preferredAnalysisDepth
+    }
+    if (prioritizedRisks !== undefined) {
+      user.agentPreferences.prioritizedRisks = prioritizedRisks
     }
 
     await user.save()
 
     res.json({
       success: true,
-      preferences: user.preferences,
-      message: 'Preferences updated successfully'
+      message: 'Preferences updated successfully',
+      agentPreferences: user.agentPreferences
     })
 
   } catch (error) {
@@ -313,6 +325,7 @@ router.patch('/usage', requireAuth, asyncHandler(async (req: any, res: any) => {
     // Update usage statistics
     if (typeof tokensUsed === 'number') {
       user.usage.tokensUsed = (user.usage.tokensUsed || 0) + tokensUsed
+      user.usage.totalUploads = (user.usage.totalUploads || 0) + 1
     }
     if (typeof apiCalls === 'number') {
       user.usage.apiCalls = (user.usage.apiCalls || 0) + apiCalls

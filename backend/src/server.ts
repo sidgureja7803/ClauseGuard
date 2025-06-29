@@ -13,6 +13,8 @@ import userRoutes from './routes/user'
 import langchainRoutes from './routes/langchain'
 import complianceRoutes from './routes/compliance'
 import contractAgentRoutes from './routes/contractAgent'
+import agentUploadRoutes from './routes/agentUpload'
+import feedbackRoutes from './routes/feedback'
 
 // Middleware imports
 import { errorHandler } from './middleware/errorHandler'
@@ -135,8 +137,11 @@ app.use((req, res, next) => {
 // Protected API routes
 app.use('/api/auth', authRoutes)
 app.use('/api/upload', uploadRoutes)
+app.use('/api/agent/upload', agentUploadRoutes)
+app.use('/api/feedback', feedbackRoutes)
 app.use('/api/analysis', analysisRoutes)
 app.use('/api/user', userRoutes)
+app.use('/api/contractAgent', contractAgentRoutes)
 
 // Error handling middleware
 app.use(errorHandler)

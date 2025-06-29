@@ -6,12 +6,32 @@ export interface IClause {
   summary: string
   riskLevel: 'safe' | 'review' | 'risky'
   riskReasons: string[]
+  recommendations?: string[]
+  impact?: string
   rewriteSuggestion?: string
   confidence: number
   position: {
     start: number
     end: number
   }
+}
+
+export interface IRiskAssessment {
+  score: number
+  level: string
+  factors: Array<{
+    risk: string
+    impact: string
+    mitigation: string
+  }>
+}
+
+export interface IKeyFinding {
+  issue: string
+  riskLevel: 'safe' | 'review' | 'risky'
+  impact: 'low' | 'medium' | 'high'
+  recommendation: string
+  clause?: string
 }
 
 export interface IAnalysis {
@@ -21,6 +41,43 @@ export interface IAnalysis {
   confidence: number
   tokensUsed: number
   processingTime: number
+  contractType?: string
+  riskScore?: number
+  keyFindings?: IKeyFinding[]
+  recommendations?: string[]
+  actionItems?: string[]
+  executiveSummary?: string
+  riskAssessment?: IRiskAssessment
+  complianceNotes?: string[]
+  strengthsAndWeaknesses?: {
+    strengths: string[]
+    weaknesses: string[]
+  }
+  agentAuditTrail?: IAgentStep[]
+  userFeedback?: IUserFeedback[]
+}
+
+export interface IAgentStep {
+  stepId: string
+  stepType: 'extraction' | 'risk_tagging' | 'clause_suggestion' | 'summary' | 'prioritization'
+  stepName: string
+  startTime: Date
+  endTime: Date
+  agentDecision: string
+  reasoning: string
+  tokensUsed: number
+  confidence: number
+  input: any
+  output: any
+}
+
+export interface IUserFeedback {
+  feedbackId: string
+  suggestionId: string
+  feedbackType: 'helpful' | 'not_helpful' | 'corrected'
+  userCorrection?: string
+  timestamp: Date
+  applied: boolean
 }
 
 export interface IContractAnalysis extends Document {
@@ -48,6 +105,8 @@ const clauseSchema = new Schema<IClause>({
     enum: ['safe', 'review', 'risky'] 
   },
   riskReasons: [{ type: String }],
+  recommendations: [{ type: String }],
+  impact: { type: String },
   rewriteSuggestion: { type: String },
   confidence: { 
     type: Number, 
@@ -59,6 +118,37 @@ const clauseSchema = new Schema<IClause>({
     start: { type: Number, required: true },
     end: { type: Number, required: true }
   }
+}, { _id: false })
+
+const agentStepSchema = new Schema<IAgentStep>({
+  stepId: { type: String, required: true },
+  stepType: { 
+    type: String, 
+    required: true,
+    enum: ['extraction', 'risk_tagging', 'clause_suggestion', 'summary', 'prioritization']
+  },
+  stepName: { type: String, required: true },
+  startTime: { type: Date, required: true },
+  endTime: { type: Date, required: true },
+  agentDecision: { type: String, required: true },
+  reasoning: { type: String, required: true },
+  tokensUsed: { type: Number, default: 0 },
+  confidence: { type: Number, required: true, min: 0, max: 1 },
+  input: { type: Schema.Types.Mixed },
+  output: { type: Schema.Types.Mixed }
+}, { _id: false })
+
+const userFeedbackSchema = new Schema<IUserFeedback>({
+  feedbackId: { type: String, required: true },
+  suggestionId: { type: String, required: true },
+  feedbackType: { 
+    type: String, 
+    required: true,
+    enum: ['helpful', 'not_helpful', 'corrected']
+  },
+  userCorrection: { type: String },
+  timestamp: { type: Date, default: Date.now },
+  applied: { type: Boolean, default: false }
 }, { _id: false })
 
 const analysisSchema = new Schema<IAnalysis>({
@@ -76,7 +166,35 @@ const analysisSchema = new Schema<IAnalysis>({
     max: 1 
   },
   tokensUsed: { type: Number, required: true },
-  processingTime: { type: Number, required: true }
+  processingTime: { type: Number, required: true },
+  contractType: { type: String },
+  riskScore: { type: Number },
+  keyFindings: [{
+    issue: { type: String },
+    riskLevel: { type: String },
+    impact: { type: String },
+    recommendation: { type: String },
+    clause: { type: String }
+  }],
+  recommendations: [{ type: String }],
+  actionItems: [{ type: String }],
+  executiveSummary: { type: String },
+  riskAssessment: {
+    score: { type: Number },
+    level: { type: String },
+    factors: [{
+      risk: { type: String },
+      impact: { type: String },
+      mitigation: { type: String }
+    }]
+  },
+  complianceNotes: [{ type: String }],
+  strengthsAndWeaknesses: {
+    strengths: [{ type: String }],
+    weaknesses: [{ type: String }]
+  },
+  agentAuditTrail: [agentStepSchema],
+  userFeedback: [userFeedbackSchema]
 }, { _id: false })
 
 const contractAnalysisSchema = new Schema<IContractAnalysis>({

@@ -21,7 +21,8 @@ import {
   Star,
   Activity,
   Users,
-  Target
+  Target,
+  Brain
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { DashboardStats, ContractAnalysis } from '@/types'
@@ -32,6 +33,9 @@ import IBMBadge from '@/components/ui/IBMBadge'
 import AnalyticsDashboard from '@/components/ui/AnalyticsDashboard'
 import ContractChatAgent from '@/components/ui/ContractChatAgent'
 import OnboardingTooltips from '@/components/ui/OnboardingTooltips'
+import jsPDF from 'jspdf'
+import AgentAuditTrail from '@/components/ui/AgentAuditTrail'
+import AgentChatInterface from '@/components/ui/AgentChatInterface'
 
 // Extend window interface for Clerk
 declare global {
@@ -41,6 +45,267 @@ declare global {
         getToken: () => Promise<string>
       }
     }
+  }
+}
+
+interface DashboardData {
+  uploads: number
+  risks: number
+  savings: string
+  accuracy: string
+}
+
+// Professional PDF Report Generator
+const downloadPDFReport = async (analysisData: any) => {
+  try {
+    console.log('📄 Generating professional PDF report...')
+    
+    const pdf = new jsPDF('p', 'mm', 'a4')
+    const pageWidth = pdf.internal.pageSize.getWidth()
+    const pageHeight = pdf.internal.pageSize.getHeight()
+    let yPosition = 20
+    
+    // Helper function to add text with word wrapping
+    const addWrappedText = (text: string, x: number, y: number, maxWidth: number, fontSize: number = 10) => {
+      pdf.setFontSize(fontSize)
+      const lines = pdf.splitTextToSize(text, maxWidth)
+      pdf.text(lines, x, y)
+      return lines.length * (fontSize * 0.35) // Return height used
+    }
+    
+    // Helper function to check if we need a new page
+    const checkNewPage = (requiredHeight: number) => {
+      if (yPosition + requiredHeight > pageHeight - 20) {
+        pdf.addPage()
+        yPosition = 20
+      }
+    }
+    
+    // Title Page
+    pdf.setFontSize(24)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text('CONTRACT ANALYSIS REPORT', pageWidth / 2, yPosition, { align: 'center' })
+    yPosition += 15
+    
+    pdf.setFontSize(12)
+    pdf.setFont('helvetica', 'normal')
+    pdf.text(`Generated: ${new Date().toLocaleString()}`, pageWidth / 2, yPosition, { align: 'center' })
+    yPosition += 10
+    
+    pdf.text(`File: ${analysisData.fileName}`, pageWidth / 2, yPosition, { align: 'center' })
+    yPosition += 20
+    
+    // Executive Summary
+    checkNewPage(30)
+    pdf.setFontSize(16)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text('EXECUTIVE SUMMARY', 20, yPosition)
+    yPosition += 10
+    
+    pdf.setFont('helvetica', 'normal')
+    const execSummary = analysisData.analysis.executiveSummary || analysisData.analysis.summary
+    const summaryHeight = addWrappedText(execSummary, 20, yPosition, pageWidth - 40, 11)
+    yPosition += summaryHeight + 15
+    
+    // Risk Assessment Box
+    checkNewPage(40)
+    pdf.setFillColor(240, 248, 255) // Light blue background
+    pdf.rect(20, yPosition - 5, pageWidth - 40, 35, 'F')
+    
+    pdf.setFontSize(14)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text('RISK ASSESSMENT', 25, yPosition + 5)
+    
+    pdf.setFontSize(11)
+    pdf.setFont('helvetica', 'normal')
+    const riskLevel = analysisData.analysis.overallRisk?.toUpperCase() || 'MEDIUM'
+    const riskScore = analysisData.analysis.riskScore || 0
+    const confidence = Math.round((analysisData.analysis.confidence || 0.95) * 100)
+    
+    pdf.text(`Risk Level: ${riskLevel}`, 25, yPosition + 15)
+    pdf.text(`Risk Score: ${riskScore}/20`, 25, yPosition + 22)
+    pdf.text(`Confidence: ${confidence}%`, 120, yPosition + 15)
+    pdf.text(`Contract Type: ${analysisData.analysis.contractType || 'General'}`, 120, yPosition + 22)
+    
+    yPosition += 45
+    
+    // Document Details
+    checkNewPage(50)
+    pdf.setFontSize(14)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text('DOCUMENT DETAILS', 20, yPosition)
+    yPosition += 8
+    
+    pdf.setFontSize(10)
+    pdf.setFont('helvetica', 'normal')
+    const details = [
+      `File Size: ${(analysisData.fileSize / 1024 / 1024).toFixed(2)} MB`,
+      `File Type: ${analysisData.fileType?.toUpperCase()}`,
+      `Characters Extracted: ${analysisData.extractedText?.length || 0}`,
+      `Clauses Analyzed: ${analysisData.analysis.clauses?.length || 0}`,
+      `Processing Time: ${analysisData.analysis.processingTime || 0}ms`
+    ]
+    
+    details.forEach(detail => {
+      pdf.text(`• ${detail}`, 25, yPosition)
+      yPosition += 5
+    })
+    yPosition += 10
+    
+    // Key Findings
+    if (analysisData.analysis.keyFindings && analysisData.analysis.keyFindings.length > 0) {
+      checkNewPage(60)
+      pdf.setFontSize(14)
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('KEY FINDINGS & RECOMMENDATIONS', 20, yPosition)
+      yPosition += 10
+      
+      analysisData.analysis.keyFindings.slice(0, 6).forEach((finding: any, index: number) => {
+        checkNewPage(25)
+        
+        // Finding header
+        pdf.setFontSize(11)
+        pdf.setFont('helvetica', 'bold')
+        pdf.text(`${index + 1}. ${finding.issue} (${finding.impact?.toUpperCase()} IMPACT)`, 25, yPosition)
+        yPosition += 6
+        
+        // Recommendation
+        pdf.setFontSize(10)
+        pdf.setFont('helvetica', 'normal')
+        const recHeight = addWrappedText(`Recommendation: ${finding.recommendation}`, 30, yPosition, pageWidth - 60, 10)
+        yPosition += recHeight + 8
+      })
+    }
+    
+    // Action Items
+    if (analysisData.analysis.actionItems && analysisData.analysis.actionItems.length > 0) {
+      checkNewPage(40)
+      pdf.setFontSize(14)
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('ACTION ITEMS', 20, yPosition)
+      yPosition += 10
+      
+      analysisData.analysis.actionItems.forEach((item: string, index: number) => {
+        checkNewPage(8)
+        pdf.setFontSize(10)
+        pdf.setFont('helvetica', item.includes('PRIORITY') ? 'bold' : 'normal')
+        const itemHeight = addWrappedText(`${index + 1}. ${item}`, 25, yPosition, pageWidth - 50, 10)
+        yPosition += itemHeight + 3
+      })
+      yPosition += 10
+    }
+    
+    // Detailed Clause Analysis
+    if (analysisData.analysis.clauses && analysisData.analysis.clauses.length > 0) {
+      pdf.addPage()
+      yPosition = 20
+      
+      pdf.setFontSize(14)
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('DETAILED CLAUSE ANALYSIS', 20, yPosition)
+      yPosition += 15
+      
+      analysisData.analysis.clauses.slice(0, 10).forEach((clause: any, index: number) => {
+        checkNewPage(40)
+        
+        // Clause header
+        pdf.setFontSize(12)
+        pdf.setFont('helvetica', 'bold')
+        pdf.text(`Clause ${index + 1}: ${clause.summary}`, 20, yPosition)
+        yPosition += 8
+        
+        // Risk level
+        pdf.setFontSize(10)
+        pdf.setFont('helvetica', 'normal')
+        pdf.text(`Risk Level: ${clause.riskLevel?.toUpperCase() || 'UNKNOWN'}`, 25, yPosition)
+        yPosition += 5
+        
+        // Clause text preview
+        pdf.setFontSize(9)
+        pdf.setFont('helvetica', 'italic')
+        const clauseText = clause.text.substring(0, 200) + (clause.text.length > 200 ? '...' : '')
+        const clauseHeight = addWrappedText(clauseText, 25, yPosition, pageWidth - 50, 9)
+        yPosition += clauseHeight + 8
+        
+        // Recommendations
+        if (clause.recommendations && clause.recommendations.length > 0) {
+          pdf.setFontSize(9)
+          pdf.setFont('helvetica', 'normal')
+          const recText = `Recommendations: ${clause.recommendations.join(', ')}`
+          const recHeight = addWrappedText(recText, 25, yPosition, pageWidth - 50, 9)
+          yPosition += recHeight + 10
+        } else {
+          yPosition += 5
+        }
+      })
+    }
+    
+    // Footer on last page
+    pdf.setFontSize(8)
+    pdf.setFont('helvetica', 'italic')
+    pdf.text('Generated by ClauseGuard AI Contract Analysis Platform', pageWidth / 2, pageHeight - 10, { align: 'center' })
+    
+    // Save the PDF
+    const fileName = `contract-analysis-report-${new Date().toISOString().split('T')[0]}.pdf`
+    pdf.save(fileName)
+    
+    console.log('✅ Professional PDF report generated successfully')
+    
+  } catch (error) {
+    console.error('❌ PDF generation failed:', error)
+    
+    // Fallback to text download
+    console.log('🔄 Falling back to text report...')
+    const reportContent = `
+CONTRACT ANALYSIS REPORT
+========================
+Generated: ${new Date().toLocaleString()}
+
+EXECUTIVE SUMMARY
+-----------------
+${analysisData.analysis.executiveSummary || analysisData.analysis.summary || 'N/A'}
+
+DOCUMENT DETAILS
+----------------
+• File Name: ${analysisData.fileName}
+• File Type: ${analysisData.fileType?.toUpperCase()}
+• File Size: ${(analysisData.fileSize / 1024 / 1024).toFixed(2)} MB
+• Contract Type: ${analysisData.analysis.contractType || 'General'}
+• Characters Extracted: ${analysisData.extractedText?.length || 0}
+• Clauses Analyzed: ${analysisData.analysis.clauses?.length || 0}
+
+RISK ASSESSMENT
+---------------
+• Overall Risk Level: ${analysisData.analysis.overallRisk?.toUpperCase()}
+• Risk Score: ${analysisData.analysis.riskScore || 0}/20
+• Confidence Level: ${Math.round((analysisData.analysis.confidence || 0.95) * 100)}%
+
+KEY FINDINGS & RECOMMENDATIONS
+-------------------------------
+${analysisData.analysis.keyFindings?.map((finding: any, index: number) => 
+  `${index + 1}. ${finding.issue} (${finding.impact?.toUpperCase()} IMPACT)
+     Recommendation: ${finding.recommendation}`
+).join('\n\n') || 'No specific findings identified.'}
+
+ACTION ITEMS
+------------
+${analysisData.analysis.actionItems?.map((item: string, index: number) => 
+  `${index + 1}. ${item}`
+).join('\n') || 'No action items identified.'}
+
+---
+This report was generated by ClauseGuard AI Contract Analysis Platform.
+`
+
+    const fallbackBlob = new Blob([reportContent], { type: 'text/plain' })
+    const fallbackUrl = window.URL.createObjectURL(fallbackBlob)
+    const fallbackLink = document.createElement('a')
+    fallbackLink.href = fallbackUrl
+    fallbackLink.download = `contract-analysis-report-${new Date().toISOString().split('T')[0]}.txt`
+    document.body.appendChild(fallbackLink)
+    fallbackLink.click()
+    document.body.removeChild(fallbackLink)
+    window.URL.revokeObjectURL(fallbackUrl)
   }
 }
 
@@ -275,6 +540,12 @@ const Dashboard = () => {
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">Analysis Complete! 🎉</h2>
                   <p className="text-gray-600">Your contract "{latestAnalysis.fileName}" has been successfully analyzed</p>
+                  {latestAnalysis.metadata?.agent && (
+                    <div className="mt-2 inline-flex items-center px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
+                      <Brain className="h-4 w-4 mr-1" />
+                      {latestAnalysis.metadata.agent}
+                    </div>
+                  )}
                 </div>
               </div>
               <button
@@ -285,10 +556,57 @@ const Dashboard = () => {
               </button>
             </div>
             
+            {/* Agent Features - Show if agent analysis */}
+            {latestAnalysis.analysis?.agentAuditTrail && latestAnalysis.analysis.agentAuditTrail.length > 0 && (
+              <div className="mb-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Agent Chat Interface */}
+                  <AgentChatInterface
+                    agentSteps={latestAnalysis.analysis.agentAuditTrail}
+                    analysisResult={latestAnalysis.analysis}
+                    onFeedback={async (stepId: string, feedback: string) => {
+                      try {
+                        await fetch('/api/feedback/suggestion', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                          },
+                          body: JSON.stringify({
+                            analysisId: latestAnalysis.analysisId,
+                            suggestionId: stepId,
+                            feedbackType: feedback
+                          })
+                        })
+                        console.log('Feedback submitted successfully')
+                      } catch (error) {
+                        console.error('Feedback submission failed:', error)
+                      }
+                    }}
+                    className="h-80"
+                  />
+
+                  {/* Agent Audit Trail */}
+                  <AgentAuditTrail
+                    steps={latestAnalysis.analysis.agentAuditTrail}
+                    className="h-80 overflow-hidden"
+                  />
+                </div>
+              </div>
+            )}
+            
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white rounded-xl p-6 shadow-sm">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Analysis Summary</h3>
-                <p className="text-gray-700 leading-relaxed">{latestAnalysis.analysis.summary}</p>
+                <p className="text-gray-700 leading-relaxed mb-4">{latestAnalysis.analysis.summary}</p>
+                
+                {/* Executive Summary */}
+                {latestAnalysis.analysis.executiveSummary && (
+                  <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
+                    <h4 className="font-medium text-blue-900 mb-2">Executive Summary</h4>
+                    <p className="text-blue-800 text-sm">{latestAnalysis.analysis.executiveSummary}</p>
+                  </div>
+                )}
                 
                 <div className="mt-4 flex items-center justify-between">
                   <div className="flex items-center space-x-2">
@@ -322,6 +640,10 @@ const Dashboard = () => {
                     <span className="font-medium">{latestAnalysis.fileType?.toUpperCase()}</span>
                   </div>
                   <div className="flex justify-between">
+                    <span className="text-gray-600">Contract Type:</span>
+                    <span className="font-medium capitalize">{latestAnalysis.analysis.contractType || 'General'}</span>
+                  </div>
+                  <div className="flex justify-between">
                     <span className="text-gray-600">Characters Extracted:</span>
                     <span className="font-medium">{latestAnalysis.extractedText?.length || 0}</span>
                   </div>
@@ -329,21 +651,88 @@ const Dashboard = () => {
                     <span className="text-gray-600">Clauses Found:</span>
                     <span className="font-medium">{latestAnalysis.analysis.clauses?.length || 0}</span>
                   </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Risk Score:</span>
+                    <span className={`font-medium ${
+                      (latestAnalysis.analysis.riskScore || 0) >= 12 ? 'text-red-600' :
+                      (latestAnalysis.analysis.riskScore || 0) >= 6 ? 'text-yellow-600' : 'text-green-600'
+                    }`}>
+                      {latestAnalysis.analysis.riskScore || 0}/20
+                    </span>
+                  </div>
+                  {/* Agent-specific metrics */}
+                  {latestAnalysis.metadata?.stepsExecuted && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Agent Steps:</span>
+                      <span className="font-medium text-purple-600">{latestAnalysis.metadata.stepsExecuted}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
             
-            {latestAnalysis.extractedText && (
+            {/* Key Findings & Recommendations */}
+            {latestAnalysis.analysis.keyFindings && latestAnalysis.analysis.keyFindings.length > 0 && (
               <div className="mt-6 bg-white rounded-xl p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Extracted Text Preview</h3>
-                <div className="bg-gray-50 rounded-lg p-4 max-h-40 overflow-y-auto">
-                  <pre className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
-                    {latestAnalysis.extractedText.substring(0, 500)}
-                    {latestAnalysis.extractedText.length > 500 && '...'}
-                  </pre>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Key Findings & Recommendations</h3>
+                <div className="space-y-4">
+                  {latestAnalysis.analysis.keyFindings.slice(0, 3).map((finding: any, index: number) => (
+                    <div key={index} className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg">
+                      <div className={`p-2 rounded-full ${
+                        finding.impact === 'high' ? 'bg-red-100 text-red-600' :
+                        finding.impact === 'medium' ? 'bg-yellow-100 text-yellow-600' :
+                        'bg-green-100 text-green-600'
+                      }`}>
+                        <AlertTriangle className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-900">{finding.issue}</h4>
+                        <p className="text-sm text-gray-600 mt-1">{finding.recommendation}</p>
+                        <div className="mt-2">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            finding.riskLevel === 'risky' ? 'bg-red-100 text-red-800' :
+                            finding.riskLevel === 'review' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-green-100 text-green-800'
+                          }`}>
+                            {finding.riskLevel?.toUpperCase()}
+                          </span>
+                          <span className="ml-2 text-xs text-gray-500">
+                            {finding.impact?.toUpperCase()} IMPACT
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
+
+            {/* Action Buttons */}
+            <div className="mt-6 flex flex-wrap justify-center gap-4">
+              <button
+                onClick={() => downloadPDFReport(latestAnalysis)}
+                className="flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Download className="h-5 w-5" />
+                <span>Download Report</span>
+              </button>
+              
+              <Link
+                to="/agent-upload"
+                className="flex items-center space-x-2 bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                <Brain className="h-5 w-5" />
+                <span>Analyze Another Contract</span>
+              </Link>
+              
+              <Link
+                to="/history"
+                className="flex items-center space-x-2 bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                <Clock className="h-5 w-5" />
+                <span>View History</span>
+              </Link>
+            </div>
           </div>
         )}
 

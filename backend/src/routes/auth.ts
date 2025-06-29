@@ -43,8 +43,7 @@ async function handleUserCreated(userData: any) {
     const user = new User({
       clerkId: userData.id,
       email: userData.email_addresses[0]?.email_address,
-      firstName: userData.first_name,
-      lastName: userData.last_name,
+      name: userData.first_name + ' ' + userData.last_name,
       imageUrl: userData.image_url
     })
 
@@ -65,9 +64,8 @@ async function handleUserUpdated(userData: any) {
     }
 
     // Update user data
+    user.name = userData.first_name + ' ' + userData.last_name || user.name
     user.email = userData.email_addresses[0]?.email_address || user.email
-    user.firstName = userData.first_name || user.firstName
-    user.lastName = userData.last_name || user.lastName
     user.imageUrl = userData.image_url || user.imageUrl
 
     await user.save()
