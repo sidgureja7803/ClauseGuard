@@ -4,7 +4,7 @@
  */
 
 // Get API base URL from environment variables
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:7777/api'
 
 // Clerk session token helper
 const getAuthToken = async (): Promise<string | null> => {
@@ -60,7 +60,7 @@ export const apiRequest = async <T = any>(
 export const dashboardAPI = {
   getStats: () => apiRequest('/user/dashboard/stats'),
   getRecentUploads: (limit?: number) => 
-    apiRequest(`/user/dashboard/recent-uploads${limit ? `?limit=${limit}` : ''}`),
+    apiRequest(`/upload/history${limit ? `?limit=${limit}` : ''}`),
 }
 
 // User API calls

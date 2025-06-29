@@ -40,23 +40,41 @@ const Upload = () => {
       const formData = new FormData()
       formData.append('file', uploadedFile)
 
-      const uploadToast = toast.loading('Uploading contract...')
+      const uploadToast = toast.loading('Uploading and analyzing contract...')
 
       const response = await api.upload.uploadFile(formData)
 
       toast.dismiss(uploadToast)
-      toast.loading('Analyzing contract with AI...', { duration: 8000 })
-
-      // Simulate analysis time
-      setTimeout(() => {
-        toast.dismiss()
+      
+      // Check if we got immediate results
+      if (response.success && response.analysis) {
         toast.success('Contract analysis completed!')
-        navigate(`/analysis/${response.data.analysisId}`)
-      }, 8000)
+        
+        // Store the analysis result in sessionStorage for display
+        sessionStorage.setItem('latestAnalysis', JSON.stringify({
+          fileName: response.fileName,
+          analysis: response.analysis,
+          extractedText: response.extractedText,
+          fileSize: response.fileSize,
+          fileType: response.fileType,
+          analysisId: response.analysisId
+        }))
+        
+        // Navigate to dashboard to show results
+        navigate('/dashboard')
+      } else {
+        // Fallback to old behavior if no immediate results
+        toast.loading('Analyzing contract with AI...', { duration: 8000 })
+        setTimeout(() => {
+          toast.dismiss()
+          toast.success('Contract analysis completed!')
+          navigate(`/analysis/${response.analysisId}`)
+        }, 8000)
+      }
 
     } catch (error) {
       console.error('Upload failed:', error)
-      toast.error('Failed to upload contract. Please try again.')
+      toast.error(`Failed to upload contract: ${error instanceof Error ? error.message : 'Unknown error'}`)
       setUploading(false)
       setAnalyzing(false)
     }
